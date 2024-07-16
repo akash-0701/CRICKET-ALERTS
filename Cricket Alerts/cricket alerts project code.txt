@@ -1,0 +1,76 @@
+import sys
+import warnings 
+import requests
+from time import sleep
+from bs4 import BeautifulSoup
+warnings.filterwarnings('ignore')
+from tkinter import Tk
+from tkinter.messagebox import Message 
+from _tkinter import TclError
+
+class Cricketinfo:
+    def __init__(self):
+        self.url = "http://static.cricinfo.com/rss/livescores.xml"
+
+    def display_score(self,score):
+        TIME_TO_WAIT = 20000 # in milliseconds 
+        root = Tk() 
+        root.withdraw()
+        try:
+        	root.after(TIME_TO_WAIT, root.destroy) 
+        	Message(title="your title", message=score, master=root).show()
+        except TclError:
+        	pass
+    
+        
+    def live_matchs_details(self):
+        sno = 1
+        match_guid = []
+        response = requests.get(self.url)
+        soup = BeautifulSoup(response.text,'lxml')
+        print('\n\n=====================')
+        print('Live Cricket Matches:')
+        print('=====================\n')
+        for item in soup.findAll('item'):
+            print(str(sno) + '. ' + item.find('description').text)
+            match_guid.append(item.find('guid').text)
+            sno = sno + 1
+        return match_guid
+            
+    def validate_user_input(self):
+    	print('Enter match number or enter 0 to exit:')
+    	while True:
+    		try:
+    			userInput = int(input())
+    		except NameError:
+	  		    print('Invalid input. Try Again!')
+	  		    continue
+    		except SyntaxError:
+	  		    print('Invalid input. Try Again!')
+    		if userInput < 0 or userInput > 30:
+	 		    print('Invalid input. Try Again!')
+	 		    continue
+    		elif userInput == 0:
+	  		    sys.exit()      
+    		return userInput
+	  		
+    def get_live_matchs(self):
+        match_guid= self.live_matchs_details()
+        userInput = self.validate_user_input()
+        try:
+	        while True:
+	            matchUrl = match_guid[userInput - 1]
+	            r = requests.get(matchUrl)
+	            soup = BeautifulSoup(r.text,'lxml') 
+	            score = soup.findAll('title')    
+	            try:
+	                r.raise_for_status()
+	            except Exception as exc:
+	                print ('Connection Failure. Try again!')
+	                continue
+	            self.display_score(score[0].text)
+        except KeyboardInterrupt:
+            print('interrupted!')
+            
+m=Cricketinfo()
+m.get_live_matchs()
